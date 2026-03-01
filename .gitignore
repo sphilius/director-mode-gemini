@@ -17,6 +17,10 @@ static/
 .env.local
 .env.production
 
+# GCP credentials
+service-account.json
+*.json.key
+
 # IDE
 .vscode/
 .idea/

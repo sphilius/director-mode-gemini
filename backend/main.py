@@ -15,9 +15,12 @@ import os
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+load_dotenv()
 
 from backend.agents.director_agent import DirectorAgent
 from backend.utils.story_state import StoryState
