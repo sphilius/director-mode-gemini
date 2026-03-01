@@ -109,6 +109,15 @@ body {
   50% { opacity: 0; }
 }
 
+.transcript-in {
+  font-size: 0.85rem;
+  color: var(--accent-dim);
+  font-style: italic;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--bg-surface);
+}
+
 .placeholder {
   color: var(--text-muted);
   font-style: italic;
@@ -194,6 +203,22 @@ body {
 
 .connection-dot.connected {
   background: #27ae60;
+}
+
+.live-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: var(--danger);
+  color: #fff;
+  animation: pulse-live 2s ease-in-out infinite;
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .scene-count {

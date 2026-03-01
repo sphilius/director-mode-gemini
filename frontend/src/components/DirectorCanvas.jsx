@@ -2,9 +2,10 @@ import { useEffect, useRef } from "react";
 
 /**
  * DirectorCanvas — the main stage area that displays the AI narration.
- * Text streams in token-by-token when connected via WebSocket.
+ * In live mode, narration comes from output transcription of audio.
+ * Also shows the input transcription (what the user said).
  */
-export default function DirectorCanvas({ narration, isStreaming }) {
+export default function DirectorCanvas({ narration, transcriptIn, isStreaming }) {
   const endRef = useRef(null);
 
   useEffect(() => {
@@ -14,6 +15,9 @@ export default function DirectorCanvas({ narration, isStreaming }) {
   return (
     <section className="director-canvas">
       <div className="canvas-inner">
+        {transcriptIn && (
+          <p className="transcript-in">You: {transcriptIn}</p>
+        )}
         {narration ? (
           <p className="narration-text">
             {narration}

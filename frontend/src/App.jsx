@@ -10,9 +10,14 @@ export default function App() {
   const {
     story,
     narration,
+    transcriptIn,
     isStreaming,
     isConnected,
+    isLive,
+    isMicActive,
     sendDirective,
+    toggleMic,
+    interruptGeneration,
     resetSession,
   } = useDirectorSession(sessionId);
 
@@ -24,7 +29,11 @@ export default function App() {
       </header>
 
       <main className="app-main">
-        <DirectorCanvas narration={narration} isStreaming={isStreaming} />
+        <DirectorCanvas
+          narration={narration}
+          transcriptIn={transcriptIn}
+          isStreaming={isStreaming}
+        />
 
         <aside className="app-sidebar">
           <StoryTimeline scenes={story?.scenes ?? []} />
@@ -34,11 +43,17 @@ export default function App() {
       <footer className="app-footer">
         <VoiceControls
           onDirective={sendDirective}
-          disabled={isStreaming}
+          onToggleMic={toggleMic}
+          onInterrupt={interruptGeneration}
+          isMicActive={isMicActive}
+          isStreaming={isStreaming}
+          isLive={isLive}
         />
         <StatusBar
           isConnected={isConnected}
+          isLive={isLive}
           isStreaming={isStreaming}
+          isMicActive={isMicActive}
           sceneCount={story?.scenes?.length ?? 0}
           onReset={resetSession}
         />

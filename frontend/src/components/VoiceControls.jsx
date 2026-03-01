@@ -1,50 +1,25 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 
 /**
- * VoiceControls — text input with optional speech-to-text.
- * Falls back gracefully when the Web Speech API is unavailable.
+ * VoiceControls — text input + live mic toggle for the Gemini Live API.
+ *
+ * When live mode is active, the mic button streams PCM audio directly
+ * to Gemini via WebSocket. Text input works as a fallback in both modes.
  */
-export default function VoiceControls({ onDirective, disabled }) {
+export default function VoiceControls({
+  onDirective,
+  onToggleMic,
+  onInterrupt,
+  isMicActive,
+  isStreaming,
+  isLive,
+}) {
   const [text, setText] = useState("");
-  const [listening, setListening] = useState(false);
-  const recognitionRef = useRef(null);
-
-  const supportsVoice =
-    typeof window !== "undefined" &&
-    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
-
-  const toggleListening = () => {
-    if (listening) {
-      recognitionRef.current?.stop();
-      setListening(false);
-      return;
-    }
-
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = "en-US";
-
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setText((prev) => (prev ? `${prev} ${transcript}` : transcript));
-      setListening(false);
-    };
-
-    recognition.onerror = () => setListening(false);
-    recognition.onend = () => setListening(false);
-
-    recognitionRef.current = recognition;
-    recognition.start();
-    setListening(true);
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const trimmed = text.trim();
-    if (!trimmed || disabled) return;
+    if (!trimmed) return;
     onDirective(trimmed);
     setText("");
   };
@@ -54,26 +29,40 @@ export default function VoiceControls({ onDirective, disabled }) {
       <input
         className="directive-input"
         type="text"
-        placeholder="Direct the scene…"
+        placeholder={isMicActive ? "Listening… speak your direction" : "Direct the scene…"}
         value={text}
         onChange={(e) => setText(e.target.value)}
-        disabled={disabled}
+        disabled={isMicActive}
       />
-      {supportsVoice && (
+
+      {/* Live mic toggle — streams audio to Gemini */}
+      {isLive && (
         <button
           type="button"
-          className={`mic-btn ${listening ? "listening" : ""}`}
-          onClick={toggleListening}
-          disabled={disabled}
-          title="Voice input"
+          className={`mic-btn ${isMicActive ? "listening" : ""}`}
+          onClick={onToggleMic}
+          title={isMicActive ? "Stop microphone" : "Start microphone"}
         >
-          {listening ? "⏹" : "🎤"}
+          {isMicActive ? "⏹" : "🎤"}
         </button>
       )}
+
+      {/* Interrupt button — stop current generation */}
+      {isStreaming && (
+        <button
+          type="button"
+          className="mic-btn"
+          onClick={onInterrupt}
+          title="Stop generation"
+        >
+          ✋
+        </button>
+      )}
+
       <button
         type="submit"
         className="send-btn"
-        disabled={disabled || !text.trim()}
+        disabled={!text.trim() || isMicActive}
       >
         Direct
       </button>
