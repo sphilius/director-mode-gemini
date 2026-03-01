@@ -1,0 +1,297 @@
+/* --------------------------------------------------------
+   Director Mode — Global Styles
+   Dark cinematic theme with amber accents
+   -------------------------------------------------------- */
+
+:root {
+  --bg-primary: #0d0d0d;
+  --bg-secondary: #1a1a1a;
+  --bg-surface: #242424;
+  --text-primary: #e8e8e8;
+  --text-muted: #888;
+  --accent: #d4a017;
+  --accent-dim: #8b6914;
+  --danger: #c0392b;
+  --radius: 8px;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ---------- Layout ---------- */
+
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--bg-surface);
+}
+
+.app-header h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.app-header .subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.app-main {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  overflow: hidden;
+}
+
+.app-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 24px 16px;
+  border-top: 1px solid var(--bg-surface);
+}
+
+/* ---------- Director Canvas ---------- */
+
+.director-canvas {
+  padding: 32px 24px;
+  overflow-y: auto;
+}
+
+.canvas-inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.narration-text {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  background: var(--accent);
+  margin-left: 2px;
+  animation: blink 0.8s step-end infinite;
+  vertical-align: text-bottom;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 1.1rem;
+}
+
+/* ---------- Voice Controls ---------- */
+
+.voice-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.directive-input {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid var(--bg-surface);
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.directive-input:focus {
+  border-color: var(--accent-dim);
+}
+
+.mic-btn,
+.send-btn,
+.reset-btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.send-btn {
+  background: var(--accent);
+  color: var(--bg-primary);
+}
+
+.send-btn:hover:not(:disabled) {
+  background: var(--accent-dim);
+}
+
+.send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mic-btn {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.mic-btn.listening {
+  background: var(--danger);
+  color: #fff;
+}
+
+/* ---------- Status Bar ---------- */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.connection-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+}
+
+.connection-dot.connected {
+  background: #27ae60;
+}
+
+.scene-count {
+  margin-left: auto;
+}
+
+.reset-btn {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--bg-surface);
+  font-size: 0.75rem;
+  padding: 4px 10px;
+}
+
+.reset-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* ---------- Story Timeline ---------- */
+
+.story-timeline {
+  padding: 24px 16px;
+  border-left: 1px solid var(--bg-surface);
+  overflow-y: auto;
+  height: 100%;
+}
+
+.story-timeline.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.story-timeline h2 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
+.timeline-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.timeline-item {
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+}
+
+.timeline-item strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.timeline-item p {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.mood-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+  background: var(--bg-surface);
+  color: var(--text-muted);
+}
+
+.mood-tense { color: #e74c3c; border: 1px solid #e74c3c44; }
+.mood-calm { color: #3498db; border: 1px solid #3498db44; }
+.mood-joyful { color: #2ecc71; border: 1px solid #2ecc7144; }
+.mood-mysterious { color: #9b59b6; border: 1px solid #9b59b644; }
+.mood-dramatic { color: #e67e22; border: 1px solid #e67e2244; }
+.mood-melancholic { color: #7f8c8d; border: 1px solid #7f8c8d44; }
+.mood-suspenseful { color: #f39c12; border: 1px solid #f39c1244; }
+.mood-romantic { color: #e91e63; border: 1px solid #e91e6344; }
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 768px) {
+  .app-main {
+    grid-template-columns: 1fr;
+  }
+
+  .story-timeline {
+    display: none;
+  }
+}
