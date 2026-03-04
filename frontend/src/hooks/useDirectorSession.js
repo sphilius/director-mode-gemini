@@ -50,8 +50,8 @@ export default function useDirectorSession(sessionId) {
 
             return {
               ...prevStory,
-              scenes: [...prevStory.scenes, newScene],
-              timeline: [...prevStory.timeline, newTimelineEntry],
+              scenes: [...prevStory.scenes.slice(0, -1), newScene],
+              timeline: [...prevStory.timeline.slice(0, -1), newTimelineEntry],
             };
           });
           break;

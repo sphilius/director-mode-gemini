@@ -169,13 +169,21 @@ class DirectorAgent:
 
     def _handle_function_call(self, name: str, args: dict) -> dict:
         if name == "update_scene":
-            scene = Scene(
-                title=args.get("title", "Untitled"),
-                description=args.get("description", ""),
-                mood=Mood(args.get("mood", "calm")),
-                director_notes=args.get("directorNotes", ""),
-            )
-            self.story.add_scene(scene)
+            # If a scene exists, update it. Otherwise, create a new one.
+            if self.story.current_scene:
+                scene = self.story.current_scene
+                scene.title = args.get("title", scene.title)
+                scene.description = args.get("description", scene.description)
+                scene.mood = Mood(args.get("mood", scene.mood.value))
+                scene.director_notes = args.get("directorNotes", scene.director_notes)
+            else:
+                scene = Scene(
+                    title=args.get("title", "Untitled"),
+                    description=args.get("description", ""),
+                    mood=Mood(args.get("mood", "calm")),
+                    director_notes=args.get("directorNotes", ""),
+                )
+                self.story.add_scene(scene)
             return {"action": "scene_updated", "scene": scene.to_dict()}
 
         if name == "introduce_character":
