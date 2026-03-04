@@ -11,10 +11,14 @@ import json
 import os
 from typing import AsyncIterator, Optional
 
+from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
 from backend.utils.story_state import Character, Mood, Scene, StoryState
+
+# Force load environment variables
+load_dotenv()
 
 SYSTEM_INSTRUCTION = """\
 You are **Director**, an AI creative partner that helps users direct \
@@ -72,9 +76,14 @@ class DirectorAgent:
     """Wraps the Gemini generative model with Director Mode behaviour."""
 
     def __init__(self, story_state: Optional[StoryState] = None) -> None:
-        api_key = os.environ.get("GEMINI_API_KEY", "")
-        self.client = genai.Client(api_key=api_key)
-        self.model_id = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-preview-05-20")
+        # FIX 1: Use Vertex AI credentials from environment
+        # load_dotenv() above ensures these are populated
+        self.client = genai.Client(
+            vertexai=True,
+            project=os.environ["VERTEX_AI_PROJECT"],
+            location=os.environ["VERTEX_AI_LOCATION"]
+        )
+        self.model_id = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
         self.story = story_state or StoryState()
         self.history: list[types.Content] = []
 
@@ -98,16 +107,17 @@ class DirectorAgent:
         narration = ""
         state_updates: list[dict] = []
 
-        for candidate in response.candidates:
-            for part in candidate.content.parts:
-                if part.text:
-                    narration += part.text
-                if part.function_call:
-                    result = self._handle_function_call(
-                        part.function_call.name,
-                        dict(part.function_call.args),
-                    )
-                    state_updates.append(result)
+        if response.candidates:
+            for candidate in response.candidates:
+                for part in candidate.content.parts:
+                    if part.text:
+                        narration += part.text
+                    if part.function_call:
+                        result = self._handle_function_call(
+                            part.function_call.name,
+                            dict(part.function_call.args),
+                        )
+                        state_updates.append(result)
 
         # Append assistant turn to history
         self.history.append(types.Content(role="model", parts=[types.Part(text=narration or "...")]))
@@ -130,11 +140,17 @@ class DirectorAgent:
         )
 
         full_text = ""
-        async for chunk in self.client.aio.models.generate_content_stream(
+        
+        # FIX 2: Await the stream creation (Async Fix)
+        stream = await self.client.aio.models.generate_content_stream(
             model=self.model_id,
             contents=self.history,
             config=config,
-        ):
+        )
+
+        async for chunk in stream:
+            if not chunk.candidates:
+                continue
             for part in chunk.candidates[0].content.parts:
                 if part.text:
                     full_text += part.text
