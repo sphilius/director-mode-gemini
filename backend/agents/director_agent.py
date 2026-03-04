@@ -160,7 +160,9 @@ class DirectorAgent:
                         part.function_call.name,
                         dict(part.function_call.args),
                     )
-                    yield json.dumps({"type": "state_update", "data": result}) + "\n"
+                    # Use the action as the event type
+                    event_type = result.get("action", "state_update")
+                    yield json.dumps({"type": event_type, "data": result}) + "\n"
 
         self.history.append(types.Content(role="model", parts=[types.Part(text=full_text or "...")]))
         yield json.dumps({"type": "done", "data": self.story.to_dict()}) + "\n"
