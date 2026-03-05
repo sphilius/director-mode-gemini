@@ -30,7 +30,8 @@ Rules:
 1. Always stay in character as a film/theatre director's assistant.
 2. When the user gives a directing cue, narrate what happens on the \
    "stage" in 2-4 evocative sentences.
-3. Return structured JSON when asked for scene or character metadata.
+3. NEVER output raw JSON in your narrative response. When scene details \
+   (like title, description, or mood) change, ALWAYS use the `update_scene` tool.
 4. Keep continuity — reference earlier scenes and characters naturally.
 5. If the user says "cut", end the current scene gracefully and \
    summarise it in one line.
@@ -94,7 +95,7 @@ class DirectorAgent:
         config = types.GenerateContentConfig(
             system_instruction=SYSTEM_INSTRUCTION,
             tools=[TOOLS],
-            temperature=0.9,
+            temperature=0.4,
             max_output_tokens=1024,
         )
 
@@ -135,7 +136,7 @@ class DirectorAgent:
         config = types.GenerateContentConfig(
             system_instruction=SYSTEM_INSTRUCTION,
             tools=[TOOLS],
-            temperature=0.9,
+            temperature=0.4,
             max_output_tokens=1024,
         )
 
