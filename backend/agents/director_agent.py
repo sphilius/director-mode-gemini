@@ -188,11 +188,11 @@ class DirectorAgent:
                 self.story.add_scene(scene)
 
             # Generate an image based on the scene description
-            image_response = await self.client.aio.models.generate_image(
+            image_response = await self.client.aio.models.generate_images(
                 model="imagen-4.0-generate-001",
                 prompt=scene.description,
             )
-            image_bytes = image_response[0].image_bytes
+            image_bytes = image_response.images[0].image_bytes
             image_b64 = base64.b64encode(image_bytes).decode("utf-8")
             data_url = f"data:image/png;base64,{image_b64}"
 
