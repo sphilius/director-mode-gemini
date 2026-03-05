@@ -7,6 +7,7 @@ and manipulates the shared StoryState.
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 from typing import AsyncIterator, Optional
@@ -114,7 +115,7 @@ class DirectorAgent:
                     if part.text:
                         narration += part.text
                     if part.function_call:
-                        result = self._handle_function_call(
+                        result = await self._handle_function_call(
                             part.function_call.name,
                             dict(part.function_call.args),
                         )
@@ -157,7 +158,7 @@ class DirectorAgent:
                     full_text += part.text
                     yield json.dumps({"type": "token", "data": part.text}) + "\n"
                 if part.function_call:
-                    result = self._handle_function_call(
+                    result = await self._handle_function_call(
                         part.function_call.name,
                         dict(part.function_call.args),
                     )
@@ -168,7 +169,7 @@ class DirectorAgent:
         self.history.append(types.Content(role="model", parts=[types.Part(text=full_text or "...")]))
         yield json.dumps({"type": "done", "data": self.story.to_dict()}) + "\n"
 
-    def _handle_function_call(self, name: str, args: dict) -> dict:
+    async def _handle_function_call(self, name: str, args: dict) -> dict:
         if name == "update_scene":
             # If a scene exists, update it. Otherwise, create a new one.
             if self.story.current_scene:
@@ -185,7 +186,19 @@ class DirectorAgent:
                     director_notes=args.get("directorNotes", ""),
                 )
                 self.story.add_scene(scene)
-            return {"action": "scene_updated", "scene": scene.to_dict()}
+
+            # Generate an image based on the scene description
+            image_response = await self.client.aio.models.generate_image(
+                model="imagen-4.0-generate-001",
+                prompt=scene.description,
+            )
+            image_bytes = image_response[0].image_bytes
+            image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+            data_url = f"data:image/png;base64,{image_b64}"
+
+            scene_dict = scene.to_dict()
+            scene_dict["imageUrl"] = data_url
+            return {"action": "scene_updated", "scene": scene_dict}
 
         if name == "introduce_character":
             character = Character(
