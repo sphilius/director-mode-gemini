@@ -59,7 +59,22 @@ def main(argv: list[str] | None = None) -> int:
     p_base = sub.add_parser("baseline", help="Show learned vocal-tuning baseline")
     p_base.add_argument("character", help="Character name (or 'global')")
 
+    p_mark = sub.add_parser("mark", help="Record a keep/reject decision (feeds the baseline learner)")
+    p_mark.add_argument("character", help="Character name")
+    p_mark.add_argument("filename", help="Generated audio filename")
+    g = p_mark.add_mutually_exclusive_group(required=True)
+    g.add_argument("--keep", action="store_true", help="You kept this take")
+    g.add_argument("--reject", action="store_true", help="You rejected this take")
+
     args = parser.parse_args(argv)
+
+    if args.cmd == "mark":
+        cfg = preference_store.config_for_filename(args.filename)
+        preference_store.record_decision(args.character, args.filename, accepted=args.keep, config=cfg)
+        verdict = "KEEP" if args.keep else "REJECT"
+        note = "" if cfg else "  (no config found — generate with --execute first so it can learn)"
+        print(f"Recorded {verdict} for {args.filename}{note}")
+        return 0
 
     if args.cmd == "baseline":
         data = (preference_store.global_baseline() if args.character.lower() == "global"

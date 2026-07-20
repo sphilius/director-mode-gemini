@@ -56,6 +56,14 @@ def record_decision(character: str, filename: str, accepted: bool,
     })
 
 
+def config_for_filename(filename: str) -> dict:
+    """Look up the config used to generate a file (most recent generation event)."""
+    for e in reversed(_read_events()):
+        if e.get("type") == "generation" and e.get("filename") == filename:
+            return e.get("config", {})
+    return {}
+
+
 def _read_events() -> list[dict]:
     if not EVENT_LOG.exists():
         return []
