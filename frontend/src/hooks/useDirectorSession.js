@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const WS_BASE =
-  import.meta.env.VITE_WS_URL ??
-  `ws://${window.location.hostname}:8000`;
+// Point directly to the Uvicorn backend port to bypass the Vite proxy entirely
+const WS_BASE = "ws://127.0.0.1:8000";
 
 /**
  * useDirectorSession — manages WebSocket connection and story state
@@ -20,8 +19,15 @@ export default function useDirectorSession(sessionId) {
     const ws = new WebSocket(`${WS_BASE}/ws/direct/${sessionId}`);
 
     ws.onopen = () => setIsConnected(true);
-    ws.onclose = () => setIsConnected(false);
-    ws.onerror = () => setIsConnected(false);
+    ws.onerror = (error) => {
+      console.error("WebSocket connection error:", error);
+      setIsConnected(false);
+    };
+
+    ws.onclose = (event) => {
+      console.warn("WebSocket closed", event.code, event.reason);
+      setIsConnected(false);
+    };
 
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data);
@@ -86,6 +92,9 @@ export default function useDirectorSession(sessionId) {
     wsRef.current = ws;
 
     return () => {
+      // Prevent React's Strict Mode cleanup from dumping a 1006 error into the console
+      ws.onerror = null;
+      ws.onclose = null;
       ws.close();
     };
   }, [sessionId]);

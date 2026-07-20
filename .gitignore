@@ -32,3 +32,6 @@ Thumbs.db
 *.log
 logs/
 .aider*
+
+# personal junk
+/arc raiders loadout as of 3-7-26.txt

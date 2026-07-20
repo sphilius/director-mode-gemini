@@ -66,13 +66,22 @@ class DirectorAgent:
     """Wraps the Gemini generative model with Director Mode behaviour."""
 
     def __init__(self, story_state: Optional[StoryState] = None) -> None:
+        # Vertex AI strictly uses OAuth tokens (Application Default Credentials).
+        # Temporarily hide GEMINI_API_KEY so the SDK doesn't send it to the Vertex
+        # endpoint, then restore it (the Audio Director's Gemini client needs it).
+        api_key = os.environ.pop("GEMINI_API_KEY", None)
+
         self.client = genai.Client(
             vertexai=True,
             project=os.environ.get("VERTEX_AI_PROJECT"),
-            location=os.environ.get("VERTEX_AI_LOCATION", "us-central1")
+            location=os.environ.get("VERTEX_AI_LOCATION", "us-central1"),
         )
-        self.model_id = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
-        # Load image model from env
+
+        if api_key is not None:
+            os.environ["GEMINI_API_KEY"] = api_key
+
+        self.model_id = os.environ.get("GEMINI_MODEL", "gemini-3.1-pro-preview")
+        # Image model for scene image generation (used in _handle_function_call).
         self.image_model_id = os.environ.get("VERTEX_AI_IMAGE_MODEL", "imagen-3.0-generate-001")
         self.story = story_state or StoryState()
         self.history: list[types.Content] = []
@@ -149,7 +158,7 @@ class DirectorAgent:
                     director_notes=args.get("directorNotes", ""),
                 )
                 self.story.add_scene(scene)
-            
+
             try:
                 print(f"Generating image for: {scene.title} using {self.image_model_id}...")
                 image_response = await self.client.aio.models.generate_images(
@@ -166,7 +175,7 @@ class DirectorAgent:
             except Exception as e:
                 print(f"Image generation failed: {e}")
                 return {"action": "scene_updated", "scene": scene.to_dict()}
-            
+
             return {"action": "scene_updated", "scene": scene.to_dict()}
 
         if name == "introduce_character":

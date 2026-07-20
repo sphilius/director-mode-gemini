@@ -51,8 +51,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.environ.get("CORS_ORIGINS", "http://localhost:5173").split(","),
-    allow_credentials=True,
+    allow_origins=["*"],  # Relaxing CORS completely for local debugging mapping
+    allow_credentials=False, # Must be false when allow_origins is ["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -114,7 +114,13 @@ async def reset_session(session_id: str):
 # ---------------------------------------------------------------------------
 @app.websocket("/ws/direct/{session_id}")
 async def ws_direct(websocket: WebSocket, session_id: str):
-    await websocket.accept()
+    print(f"\\n--- WEBSOCKET HANDSHAKE INITIATED FOR SESSION: {session_id} ---\\n")
+    try:
+        await websocket.accept()
+        print(f"\\n--- WEBSOCKET ACCEPTED FOR SESSION: {session_id} ---\\n")
+    except Exception as e:
+        print(f"\\n--- WEBSOCKET FAILED TO ACCEPT: {str(e)} ---\\n")
+        return
     agent = get_or_create_agent(session_id)
 
     try:
@@ -123,7 +129,13 @@ async def ws_direct(websocket: WebSocket, session_id: str):
             payload = json.loads(data)
             prompt = payload.get("prompt", "")
 
-            async for chunk in agent.direct_stream(prompt):
-                await websocket.send_text(chunk)
+            try:
+                async for chunk in agent.direct_stream(prompt):
+                    await websocket.send_text(chunk)
+            except Exception as e:
+                import traceback
+                print(f"\\n--- WEBSOCKET STREAM ERROR ---\\n")
+                traceback.print_exc()
+                await websocket.send_text(json.dumps({"type": "error", "data": f"Backend Error: {str(e)}"}))
     except WebSocketDisconnect:
         pass
