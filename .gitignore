@@ -31,3 +31,7 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Audio Director — generated audio + learning data (keep code, ignore output)
+backend/audio_director/out/
+backend/audio_director/data/
