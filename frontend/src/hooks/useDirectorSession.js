@@ -30,8 +30,51 @@ export default function useDirectorSession(sessionId) {
         case "token":
           setNarration((prev) => prev + msg.data);
           break;
-        case "state_update":
-          // Individual state mutation — handled on "done" with full story
+        case "scene_updated":
+          setStory((prevStory) => {
+            const newScene = msg.data.scene;
+            const newTimelineEntry = {
+              title: newScene.title,
+              mood: newScene.mood,
+            };
+
+            // Initialize story if it doesn't exist
+            if (!prevStory) {
+              return {
+                characters: [],
+                scenes: [newScene],
+                timeline: [newTimelineEntry],
+                contextSummary: "",
+              };
+            }
+
+            return {
+              ...prevStory,
+              scenes: [...prevStory.scenes.slice(0, -1), newScene],
+              timeline: [...prevStory.timeline.slice(0, -1), newTimelineEntry],
+            };
+          });
+          break;
+
+        case "character_introduced":
+          setStory((prevStory) => {
+            const newCharacter = msg.data.character;
+
+            // Initialize story if it doesn't exist
+            if (!prevStory) {
+              return {
+                characters: [newCharacter],
+                scenes: [],
+                timeline: [],
+                contextSummary: "",
+              };
+            }
+
+            return {
+              ...prevStory,
+              characters: [...prevStory.characters, newCharacter],
+            };
+          });
           break;
         case "done":
           setStory(msg.data);

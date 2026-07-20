@@ -21,6 +21,17 @@ export default function StoryTimeline({ scenes }) {
             </span>
             <strong>{scene.title}</strong>
             <p>{scene.description?.slice(0, 120)}…</p>
+            {scene.imageUrl && (
+              <img
+                src={scene.imageUrl}
+                alt={`Generated image for ${scene.title}`}
+                style={{
+                  width: "100%",
+                  borderRadius: "8px",
+                  marginTop: "10px",
+                }}
+              />
+            )}
           </li>
         ))}
       </ol>
