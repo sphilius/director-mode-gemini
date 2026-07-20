@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from backend.audio_director import pricing
 from backend.audio_director.models import CharacterVoice, CostEstimate, LineCost
+from backend.audio_director.router import RoutingPolicy, decide_engine, ELEVENLABS
 
 # Voice-design assumptions (one-time per character, ElevenLabs only).
 DESIGN_SAMPLES = 3   # previews generated per design round
@@ -100,3 +101,55 @@ def render_estimate(estimates: list[CostEstimate]) -> str:
             f"- about {(tot_el / tot_gem):.0f}x cheaper." if tot_gem else ""
         )
     return "\n".join(l for l in lines if l != "")
+
+
+def routed_summary(
+    characters: list[CharacterVoice],
+    policy: RoutingPolicy,
+    plan_key: str = pricing.DEFAULT_ELEVENLABS_PLAN,
+    regen_multiplier: float = pricing.DEFAULT_REGEN_MULTIPLIER,
+    line_model: str = pricing.EL_DEFAULT_LINE_MODEL,
+    design_model: str = pricing.EL_DEFAULT_DESIGN_MODEL,
+    gemini_model: str = pricing.DEFAULT_GEMINI_TTS_MODEL,
+) -> str:
+    """What the HYBRID routing actually costs — per engine and combined."""
+    plan = pricing.ELEVENLABS_PLANS[plan_key]
+    upc = plan.usd_per_credit
+    lcpc = pricing.EL_CREDITS_PER_CHAR[line_model]
+    dcpc = pricing.EL_CREDITS_PER_CHAR[design_model]
+    gm = pricing.GEMINI_TTS_MODELS[gemini_model]
+
+    el_lines = gem_lines = 0
+    el_credits = el_usd = gem_usd = 0.0
+    el_characters: set[str] = set()
+
+    for cv in characters:
+        for ln in cv.lines:
+            if decide_engine(ln, policy) == ELEVENLABS:
+                el_lines += 1
+                c = len(ln.text) * lcpc * regen_multiplier
+                el_credits += c
+                el_usd += c * upc
+                el_characters.add(cv.name)
+            else:
+                gem_lines += 1
+                in_tok = pricing.gemini_input_tokens_for(ln.text) * regen_multiplier
+                out_tok = pricing.gemini_output_tokens_for(ln.text) * regen_multiplier
+                gem_usd += in_tok / 1_000_000 * gm.usd_in_per_mtok + out_tok / 1_000_000 * gm.usd_out_per_mtok
+
+    # Voice-design credits only for characters that have at least one EL line.
+    for cv in characters:
+        if cv.name in el_characters:
+            dtext = cv.preview_text or cv.voice_design_prompt or ""
+            dc = len(dtext) * dcpc * DESIGN_SAMPLES * DESIGN_ROUNDS
+            el_credits += dc
+            el_usd += dc * upc
+
+    combined = el_usd + gem_usd
+    lines = [
+        f"ROUTED (mode={policy.mode}) - what the hybrid split actually costs:",
+        f"  ElevenLabs : {el_lines:>3} lines   {el_credits:>10,.0f} credits   ${el_usd:>7.2f}",
+        f"  Gemini     : {gem_lines:>3} lines   {'':>10}          ${gem_usd:>7.4f}",
+        f"  COMBINED   : {el_lines + gem_lines:>3} lines   {'':>10}          ${combined:>7.2f}",
+    ]
+    return "\n".join(lines)

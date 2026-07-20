@@ -122,6 +122,9 @@ def parse_master_text(text: str) -> list[CharacterVoice]:
         kv = _KV.match(line)
         if kv:
             key = kv.group(1).strip().lower().replace(" ", "_")
+            if key == "gemini_voice":
+                current.gemini_voice = kv.group(2).strip()
+                continue
             if key in _CONFIG_KEYS:
                 _apply_config(current.config, _CONFIG_KEYS[key], kv.group(2).strip())
                 continue
@@ -136,11 +139,27 @@ def _parse_line_item(line: str, index: int) -> LineSpec | None:
         # No category — skip but don't crash; caller may treat as uncategorised
         return LineSpec(category="uncategorized", text=body, index=index)
     category = brackets[0].strip()
-    emotion_tags = [f"[{b.strip()}]" for b in brackets[1:]]
-    # Text = everything after the first bracket token, verbatim (emotion tags stay inline)
+    engine_override = None
+    emotion_tags: list[str] = []
+    for b in brackets[1:]:
+        tok = b.strip()
+        low = tok.lower().replace(" ", "")
+        if low.startswith("engine=") or low.startswith("engine:"):
+            val = low.split("=", 1)[1] if "=" in low else low.split(":", 1)[1]
+            if val in ("elevenlabs", "el", "11", "eleven"):
+                engine_override = "elevenlabs"
+            elif val in ("gemini", "google", "gem"):
+                engine_override = "gemini"
+        else:
+            emotion_tags.append(f"[{tok}]")
+    # Text = everything after the first bracket token, verbatim. Emotion tags stay
+    # inline (v3 reads them in place); engine tokens are stripped so they aren't spoken.
     first_close = body.index("]") + 1
     text = body[first_close:].strip()
-    return LineSpec(category=category, text=text, index=index, emotion_tags=emotion_tags)
+    text = re.sub(r"\[\s*engine\s*[:=][^\]]+\]", "", text).strip()
+    text = re.sub(r"\s{2,}", " ", text)
+    return LineSpec(category=category, text=text, index=index,
+                    emotion_tags=emotion_tags, engine_override=engine_override)
 
 
 def _apply_config(cfg: VoiceConfig, field_name: str, raw: str) -> None:

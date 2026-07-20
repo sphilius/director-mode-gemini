@@ -53,6 +53,7 @@ class LineSpec:
     text: str
     index: int = 0           # position within its category
     emotion_tags: list[str] = field(default_factory=list)  # v3 tags, e.g. ["[excited]"]
+    engine_override: Optional[str] = None  # "elevenlabs" | "gemini" | None (from [engine=...])
 
     @property
     def tagged_text(self) -> str:
@@ -67,6 +68,7 @@ class LineSpec:
             "text": self.text,
             "index": self.index,
             "emotionTags": self.emotion_tags,
+            "engineOverride": self.engine_override,
         }
 
 
@@ -80,6 +82,7 @@ class CharacterVoice:
     config: VoiceConfig = field(default_factory=VoiceConfig)
     lines: list[LineSpec] = field(default_factory=list)
     voice_id: Optional[str] = None           # set once the EL voice exists
+    gemini_voice: Optional[str] = None       # prebuilt Gemini voice name (e.g. "Kore")
     voice_version: str = "v3"                # naming tag
     id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
 
@@ -105,6 +108,7 @@ class CharacterVoice:
             "config": self.config.to_dict(),
             "lines": [ln.to_dict() for ln in self.lines],
             "voiceId": self.voice_id,
+            "geminiVoice": self.gemini_voice,
             "voiceVersion": self.voice_version,
         }
 

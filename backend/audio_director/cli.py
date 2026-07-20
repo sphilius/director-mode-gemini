@@ -25,6 +25,7 @@ except Exception:
 
 from backend.audio_director import preference_store
 from backend.audio_director.audio_director import AudioDirector
+from backend.audio_director.router import RoutingPolicy
 
 
 def _add_common(p: argparse.ArgumentParser) -> None:
@@ -32,6 +33,10 @@ def _add_common(p: argparse.ArgumentParser) -> None:
     p.add_argument("--project", default="chorequest", help="Project prefix for filenames")
     p.add_argument("--plan", default="creator", choices=["free", "starter", "creator", "pro"])
     p.add_argument("--regen", type=float, default=2.5, help="Regeneration multiplier")
+    p.add_argument("--engine", default="hybrid", choices=["hybrid", "elevenlabs", "gemini"],
+                   help="Routing mode (hybrid = hero->EL, bulk->Gemini)")
+    p.add_argument("--hero-categories", default=None,
+                   help="Comma list of categories to force to ElevenLabs in hybrid mode")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -67,10 +72,14 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  {k}: {v}")
         return 0
 
+    policy = RoutingPolicy(mode=getattr(args, "engine", "hybrid"))
+    if getattr(args, "hero_categories", None):
+        policy = policy.with_hero(args.hero_categories.split(","))
+
     director = AudioDirector(
         project=args.project, plan=args.plan, regen_multiplier=args.regen,
         out_dir=getattr(args, "out", "backend/audio_director/out"),
-        execute=getattr(args, "execute", False),
+        execute=getattr(args, "execute", False), policy=policy,
     )
 
     if args.cmd == "parse":
@@ -100,7 +109,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n{mode}: {len(report['generated'])} line(s)")
         for g in report["generated"]:
             flag = "  ERROR: " + g["error"] if g.get("error") else ""
-            print(f"  {g['filename']}{flag}")
+            print(f"  [{g['engine']:>10}] {g['filename']}{flag}")
         return 0
 
     return 1
