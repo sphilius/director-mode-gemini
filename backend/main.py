@@ -49,12 +49,38 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Allowed browser origins, from the CORS_ORIGINS env var (comma-separated).
+#
+# The default covers the usual local dev ports, so `uvicorn backend.main:app`
+# still works out of the box with no env set. Set CORS_ORIGINS in deployment.
+#
+# SECURITY: "*" is filtered out rather than honoured. A wildcard origin lets any
+# website call this API from a visitor's browser, and it is what makes the
+# WebSocket check below meaningless. The .strip() tolerates "a.com, b.com"
+# (a space after the comma would otherwise never match) and stops " *" from
+# slipping past the wildcard filter.
+#
+# NOTE: setting CORS_ORIGINS to only "*" yields an EMPTY list and refuses all
+# cross-origin requests. That is deliberate — list real origins.
+ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get(
+        "CORS_ORIGINS",
+        "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173",
+    ).split(",")
+    if origin.strip() and origin.strip() != "*"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Relaxing CORS completely for local debugging mapping
-    allow_credentials=False, # Must be false when allow_origins is ["*"]
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    # No cookie or session auth exists here — nothing sets or reads cookies, and
+    # session ids travel in the URL path. So credentials are never needed.
+    allow_credentials=False,
+    # Only the methods this API serves: every HTTP route is @app.get or
+    # @app.post. OPTIONS is required for the browser's CORS preflight.
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "Accept"],
 )
 
 
@@ -115,6 +141,25 @@ async def reset_session(session_id: str):
 @app.websocket("/ws/direct/{session_id}")
 async def ws_direct(websocket: WebSocket, session_id: str):
     print(f"\\n--- WEBSOCKET HANDSHAKE INITIATED FOR SESSION: {session_id} ---\\n")
+
+    # SECURITY: CORSMiddleware does NOT protect this endpoint. Starlette applies
+    # it only to HTTP scopes, and browsers send no CORS preflight for a WebSocket
+    # handshake — so without this check ANY website could open a socket here in a
+    # visitor's browser and drive the agent on their behalf. That attack is called
+    # cross-site WebSocket hijacking (CSWSH).
+    #
+    # Browsers ALWAYS send Origin on a WS handshake, so a mismatch is a real
+    # cross-site attempt -> refuse. A MISSING Origin means a non-browser client
+    # (curl, a script, tests), which cannot be a cross-site attack, so it is
+    # allowed rather than breaking local tooling.
+    origin = websocket.headers.get("origin")
+    if origin is not None and origin not in ALLOWED_ORIGINS:
+        print(f"\\n--- WEBSOCKET REJECTED, DISALLOWED ORIGIN: {origin} ---\\n")
+        # Close BEFORE accept() so the handshake is refused outright and no agent
+        # or session is created. 1008 = policy violation.
+        await websocket.close(code=1008)
+        return
+
     try:
         await websocket.accept()
         print(f"\\n--- WEBSOCKET ACCEPTED FOR SESSION: {session_id} ---\\n")
