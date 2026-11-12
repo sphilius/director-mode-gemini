@@ -21,7 +21,7 @@ one-line pro AND con and a recommended pick. Wait for my go/adjust before buildi
   dry-run + my typed confirmation; don't `git stash drop` until I confirm.
 
 ## Repo
-Path: C:\Users\sphil\Projects\director-mode\director-mode-gemini  (branch: main)
+Path: %USERPROFILE%\Projects\director-mode\director-mode-gemini  (branch: main)
 Remote: https://github.com/sphilius/director-mode-gemini.git
 
 ## Reference docs (read these if you need deeper context)
