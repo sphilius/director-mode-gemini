@@ -3,7 +3,7 @@
 A step-by-step playbook for generating the rest of ChoreQuest's voice lines with
 the Audio Director. Copy-paste the command recipes; fill the master-doc template.
 
-All commands run **from the repo root** (`C:\Users\sphil\Projects\director-mode\director-mode-gemini`)
+All commands run **from the repo root** (the folder that contains `backend/`)
 so `backend` is importable. Nothing spends credits until you add `--execute`.
 
 ---
